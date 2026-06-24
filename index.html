@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Radiology Triage Assistant</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .dashboard { display: flex; gap: 30px; margin-top: 30px; }
+        .image-panel, .clinical-panel { flex: 1; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; }
+        img { max-width: 100%; border-radius: 5px; margin-top: 10px; }
+        .alert { background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin-bottom: 20px; font-weight: bold; }
+        .hidden { display: none; }
+        button { background-color: #0056b3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #004494; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Clinical Decision Support System (CDSS)</h2>
+    <div class="alert">
+        ⚠️ <strong>Notice:</strong> This is a research prototype. AI predictions are not a substitute for professional medical advice. Always consult a physician.
+    </div>
+
+    <form id="uploadForm">
+        <input type="file" id="imageInput" accept="image/png, image/jpeg" required>
+        <button type="submit">Analyze X-Ray</button>
+    </form>
+
+    <div id="resultsDashboard" class="dashboard hidden">
+        <div class="image-panel">
+            <h3>Grad-CAM Heatmap</h3>
+            <p>Visual highlights indicate the specific structural features mapped during inference pass.</p>
+            <img id="heatmapImage" src="" alt="AI Heatmap">
+        </div>
+
+        <div class="clinical-panel">
+            <h3>Clinical Findings</h3>
+            <p><strong>Predicted Condition:</strong> <span id="conditionText"></span></p>
+            <p><strong>AI Confidence:</strong> <span id="confidenceText"></span>%</p>
+            <hr>
+            <h4>Impression</h4>
+            <p id="impressionText"></p>
+            <hr>
+            <h4>Recommended Triage</h4>
+            <p id="triageText"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fileInput = document.getElementById('imageInput');
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        // Post raw binary configuration payload to server endpoint
+        const response = await fetch('/analyze', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if(data.status === "success") {
+            // Unhide layout element blocks
+            document.getElementById('resultsDashboard').classList.remove('hidden');
+
+            // Map parsed structural values down to target element text trees
+            document.getElementById('heatmapImage').src = "data:image/jpeg;base64," + data.heatmap;
+            document.getElementById('conditionText').innerText = data.clinical_data.condition;
+            document.getElementById('confidenceText').innerText = data.confidence;
+            document.getElementById('impressionText').innerText = data.clinical_data.impression;
+            document.getElementById('triageText').innerText = data.clinical_data.triage;
+        }
+    });
+</script>
+
+</body>
+</html>
